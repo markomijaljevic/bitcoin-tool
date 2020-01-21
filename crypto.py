@@ -10,7 +10,6 @@ sg.LOOK_AND_FEEL_TABLE['Bitcoin'] = {'BACKGROUND': '#ffae00', 'TEXT': '#13161f',
                   'BUTTON': ('#ffffff', '#13161f'), 'PROGRESS': ('#01826B', '#D0D0D0'), 'BORDER': 1, 'SLIDER_DEPTH': 0, 'PROGRESS_DEPTH': 0,
                   'COLOR_LIST': ['#3b503d', '#4a746e', '#c8cf94', '#f1edb3'], 'DESCRIPTION': ['Green', 'Turquoise', 'Yellow']}
 
-
 def connect_to_client(user, password, host, port):
     url = 'http://' + user + ':' + password + '@' + host + ':' + port
     return AuthServiceProxy(url)
@@ -117,7 +116,7 @@ def GUI(peer_info, net_info, chain_info):
                                 [   sg.Button('Peer Details', button_color=('#ffae00','#13161f'), font='Courier 14', border_width=2), 
                                     sg.Button('Cancel', button_color=('#ffae00','#13161f'), font='Courier 14', border_width=2)]]
 
-            win2 = sg.Window('Network Peers Info', layout_peer, size = (1000,700))
+            win2 = sg.Window('Network Peers Info', layout_peer, size = (1000,650))
            
 
             while True:
@@ -133,7 +132,7 @@ def GUI(peer_info, net_info, chain_info):
                     for key, item in peer_info.items():
                         output_peer_string += str(key) + ' || ' + str(item).replace('{','').replace('}','').replace("'",'').replace(',',', ').title() + ' ' * 10 + '-' * 180 + ' ' * 10
 
-                    sg.PopupScrolled(output_peer_string, title='Peer Details', size=(60,40), background_color='#ffae00',
+                    sg.PopupScrolled(output_peer_string, title='Peer Details', size=(60,55), background_color='#ffae00',
                                      button_color=('#ffae00','#13161f'), font = 'Fixedsys 12')
                    
 
@@ -166,7 +165,7 @@ def GUI(peer_info, net_info, chain_info):
                                 [sg.Text(str(chain_info.get('warnings')).replace('{','').replace('}','').replace("'",'') , font = 'Ariel 14',size=(120,1), text_color='#ff0023')],
                                 [sg.Button('Cancel', button_color=('#ffae00','#13161f'), font='Courier 14', border_width=2)]]
 
-            win3 = sg.Window('Blockchain Info', layout_chain, size = (1000,1000))
+            win3 = sg.Window('Blockchain Info', layout_chain, size = (1000,920))
 
             while True:
                 ev3, _ = win3.Read()
