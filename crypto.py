@@ -1,5 +1,5 @@
 from bitcoinrpc.authproxy import AuthServiceProxy #, JSONRPCException
-import requests, tqdm, ast, time
+import requests, tqdm, ast, time, folium, webbrowser
 from ip2geotools.databases.noncommercial import DbIpCity
 import PySimpleGUI as sg
 from urllib.parse import quote
@@ -25,6 +25,33 @@ def get_geolocation_from_ip(ip):
 
     return content
 
+
+def create_peer_map(peer_info):
+    
+    peer_map = folium.Map(
+                    location=[40.710982, 8.799805],
+                    zoom_start=3,
+                    tiles='Stamen Toner'
+                )
+
+    tooltip = 'Click me!'
+
+    for peer_ip, info in peer_info.items():
+
+        try:
+            response = DbIpCity.get(peer_ip, api_key='free')
+        except KeyError:
+            continue
+
+        lat = response.latitude
+        lon = response.longitude
+
+        folium.Marker([lat, lon], popup='<i>' + str(info.get('city')) + '</i>', tooltip=tooltip).add_to(peer_map)
+    
+    peer_map.save('index.html')
+    time.sleep(1)
+    webbrowser.open('index.html')
+
 def get_statistics(peers):
     
     countries     = []
@@ -33,7 +60,7 @@ def get_statistics(peers):
     min_fee       = []
     whitelisted   = []
 
-    for _, item in tqdm.tqdm(peers.items()):
+    for _, item in peers.items():
         countries.append(item.get('country'))
         versions.append(item.get('version'))
         sub_versions.append(item.get('sub_version'))
@@ -113,7 +140,8 @@ def GUI(peer_info, net_info, chain_info):
                                 [sg.Text('Whitelisted:', font = 'Ariel 18'), sg.Text('## Whether the peer is whitelisted', font = 'Ariel 12')],
                                 [sg.Text(str(dict(stats.get('whitelisted'))).replace('{','').replace('}','').replace("'",'') , font = 'Courier 14',size=(70,2))],
     
-                                [   sg.Button('Peer Details', button_color=('#ffae00','#13161f'), font='Courier 14', border_width=2), 
+                                [   sg.Button('Peer Details', button_color=('#ffae00','#13161f'), font='Courier 14', border_width=2),
+                                    sg.Button('Show Peer Locations on Map', button_color=('#ffae00','#13161f'), font='Courier 14', border_width=2),
                                     sg.Button('Cancel', button_color=('#ffae00','#13161f'), font='Courier 14', border_width=2)]]
 
             win2 = sg.Window('Network Peers Info', layout_peer, size = (1000,650))
@@ -134,7 +162,11 @@ def GUI(peer_info, net_info, chain_info):
 
                     sg.PopupScrolled(output_peer_string, title='Peer Details', size=(60,55), background_color='#ffae00',
                                      button_color=('#ffae00','#13161f'), font = 'Fixedsys 12')
-                   
+
+                elif ev2 == 'Show Peer Locations on Map':
+                    sg.PopupAnimated(sg.DEFAULT_BASE64_LOADING_GIF, time_between_frames=100)
+                    create_peer_map(peer_info)
+                    sg.PopupAnimated(image_source=None)
 
         if ev1 == 'Show Blockchain Info' and not win3_active:
             win3_active = True
@@ -230,37 +262,27 @@ def main():
     print('Author: Marko Mijaljević')
     print('-' * 50)
 
-    time.sleep(4)
+    time.sleep(2)
     print()
     print('Connecting to the Bitcoin Node')
     client = connect_to_client(user, password, host, port)
     print('Connected...')
     print('-' * 50)
     print()
-    print('Gathering Network information. This can take a while depending on the number of peers in the network.')
-    #print(client.getblockchaininfo())
-    #chain_info = client.getblockchaininfo()
-
-    chain_info = {  'chain': 'test', 'blocks': 1663193, 'headers': 1663193, 'bestblockhash': '00000000000002b1aae06c00ee71b0797bb4d5a10d30dcec1c43678f9c5f0d58', 'difficulty': Decimal('5700201.934604199'), 'mediantime': 1579611395,
-                    'verificationprogress': Decimal('0.9999992458033147'), 'initialblockdownload': False, 'chainwork': '00000000000000000000000000000000000000000000013de51aa21f250045ef', 'size_on_disk': 26271327078, 'pruned': False, 'softforks': [{'id': 'bip34', 'version': 2, 'reject': {'status': True}}, {'id': 'bip66', 'version': 3, 'reject': {'status': True}}, {'id': 'bip65', 'version': 4, 'reject': {'status': True}}], 'bip9_softforks': {'csv': {'status': 'active', 'startTime': 1456790400, 'timeout': 1493596800, 'since': 770112}, 'segwit': {'status': 'active', 'startTime': 1462060800, 'timeout': 1493596800, 'since': 834624}}, 'warnings': 'Warning: unknown new rules activated (versionbit 28)'}
-
-    #peer_info = get_geolocation_details(client.getpeerinfo())
-
-    peer_info = {   '144.76.58.239': {'country': 'Germany', 'region': 'Saxony', 'city': 'Falkenstein', 'continent': 'Europe', 'bytes_sent': 2210406, 'bytes_recived': 8341411, 'connection_time': 1577983821, 'ping_time': Decimal('0.03123'), 'version': 70015, 'sub_version': '/Satoshi:0.17.0/', 'start_height': 1638120, 'ban_score': 0, 'synced_blocks': 1663188, 'whitelisted': False, 'min_fee': Decimal('0.00001000')},'185.137.233.208': {'country': 'Russia', 'region': 'St.-Petersburg', 'city': 'St Petersburg', 'continent': 'Europe', 'bytes_sent': 15509554, 'bytes_recived': 25581246, 'connection_time': 1577983863, 'ping_time': Decimal('0.057732'), 'version': 70015, 'sub_version': '/Satoshi:0.18.0/', 'start_height': 1638120, 'ban_score': 0, 'synced_blocks': 1663188, 'whitelisted': False, 'min_fee': Decimal('0.00001000')}, '88.198.125.124': {'country': 'Germany',
-                    'region': 'Bavaria', 'city': 'Nuremberg', 'continent': 'Europe', 'bytes_sent': 14620346, 'bytes_recived': 14169724, 'connection_time': 1577983869, 'ping_time': Decimal('0.031393'), 'version': 70015, 'sub_version': '/Satoshi:0.19.0.1/', 'start_height': 1638120, 'ban_score': 0, 'synced_blocks': 1663188, 'whitelisted': False, 'min_fee': Decimal('0.00001000')}, '18.140.72.194': {'country': 'Singapore', 'region': '', 'city':
-                    'Singapore', 'continent': 'Asia', 'bytes_sent': 19872112, 'bytes_recived': 12711651, 'connection_time': 1577983897, 'ping_time': Decimal('0.270579'), 'version': 70015, 'sub_version': '/Satoshi:0.16.3/', 'start_height': 1638120, 'ban_score': 0, 'synced_blocks': 1663188, 'whitelisted': False, 'min_fee': Decimal('0.00001000')}, '47.74.137.152': {'country': 'Singapore', 'region': '', 'city': 'Singapore (Downtown Core)', 'continent': 'Asia', 'bytes_sent': 17368381, 'bytes_recived': 16745742, 'connection_time': 1578109841, 'ping_time': Decimal('0.356314'), 'version': 70015, 'sub_version': '/Satoshi:0.18.1(Omni:0.7.0)/', 'start_height': 1638322, 'ban_score': 0, 'synced_blocks': 1663188, 'whitelisted': False, 'min_fee': Decimal('0.00001000')}}
-
-    #net_info = client.getnetworkinfo()
+    print('Gathering Network information. This can take a while depending on the number of peers in the network.\n')
     
-    net_info = {'version': 180000, 'subversion': '/Satoshi:0.18.0/', 'protocolversion': 70015, 'localservices': '000000000000040d', 'localrelay': True, 'timeoffset': 0, 'networkactive': True, 'connections': 124, 'networks': [{'name': 'ipv4', 'limited': False, 'reachable': True, 'proxy': '', 'proxy_randomize_credentials': False}, {'name': 'ipv6', 'limited': False, 'reachable': True, 'proxy': '', 'proxy_randomize_credentials': False}, {'name': 'onion', 'limited': True, 'reachable': False, 'proxy': '', 'proxy_randomize_credentials': False}], 'relayfee': Decimal('0.00001000'), 'incrementalfee': Decimal('0.00001000'), 'localaddresses': [], 'warnings': 'Warning: unknown new rules activated (versionbit 28)'}
-    print('Completed...')
+    chain_info = client.getblockchaininfo()
+    peer_info = get_geolocation_details(client.getpeerinfo())
+    net_info = client.getnetworkinfo()
+    
+    print('\nCompleted...')
     print('')
     print('-' * 50)
     print('======> ' + 'Everything is done, Enjoy!' + ' <======')
     print('-' * 50)
+    time.sleep(2)
 
     GUI(peer_info, net_info, chain_info)
-
 
 
 if __name__ == "__main__":
